@@ -15,3 +15,11 @@ go get -u github.com/gorilla/websocket
 go get go.mongodb.org/mongo-driver/mongo
 go get github.com/dgrijalva/jwt-go  
 ```
+
+- [x] 登录
+- [ ] 注册
+- [ ] 修改个人资料
+- [ ] 新建项目
+- [ ] 删除项目
+- [ ] 编辑项目
+- [ ] 邀请协作
