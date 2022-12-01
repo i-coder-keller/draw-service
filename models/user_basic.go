@@ -26,3 +26,8 @@ func GetUserBasicByAccountAndPassword(account, password string) (*UserBasic, err
 		Decode(ub)
 	return ub, err
 }
+
+func GetUserBasicByEmail(email string) (int64, error) {
+	return Mongo.Collection(UserBasic{}.CollectionName()).
+		CountDocuments(context.Background(), bson.D{{"email", email}})
+}

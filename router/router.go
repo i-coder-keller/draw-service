@@ -11,5 +11,8 @@ func Router() *gin.Engine {
 	// 用户登录
 	r.POST("/login", service.Login)
 
+	// 发送验证验证码
+	r.POST("/sendSMS", service.SendSMS)
+
 	return r
 }
