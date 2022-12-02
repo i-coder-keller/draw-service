@@ -4,7 +4,9 @@ import (
 	"crypto/md5"
 	"crypto/tls"
 	"fmt"
+	"math/rand"
 	"net/smtp"
+	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/jordan-wright/email"
@@ -66,4 +68,12 @@ func SendCode(toUserEmail, code string) error {
 		smtp.PlainAuth("", "drawservice@163.com", "UHTPTZRWWHURRMLK", "smtp.163.com"),
 		&tls.Config{InsecureSkipVerify: true, ServerName: "smtp.163.com"},
 	)
+}
+
+// 生成随机验证码
+
+func RandomCode() string {
+	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
+	code := fmt.Sprintf("%06v", rnd.Int31n(1000000))
+	return code
 }

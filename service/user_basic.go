@@ -5,6 +5,7 @@ import (
 	"draw-service/utils"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -68,6 +69,10 @@ func SendSMS(c *gin.Context) {
 	count, err := models.GetUserBasicByEmail(request.Email)
 	if err != nil {
 		log.Printf("[DB ERROR]:%v\n", err)
+		c.JSON(http.StatusOK, gin.H{
+			"code": -1,
+			"msg":  "服务器错误",
+		})
 		return
 	}
 	if count > 0 {
@@ -77,13 +82,82 @@ func SendSMS(c *gin.Context) {
 		})
 		return
 	}
-	err = utils.SendCode(request.Email, "1234")
-	if err != nil {
-		log.Printf("[ERROR]:%v\n", err)
+	expires := time.Now().UnixMilli()
+	ev, err := models.GetEmailValidationByEmail(request.Email)
+	log.Println(expires, ev.SendTime)
+	if expires-ev.SendTime < 60000 {
+		log.Printf("[短时间重复发送]")
+		c.JSON(http.StatusOK, gin.H{
+			"code": -1,
+			"msg":  "验证码发送频繁",
+		})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{
-		"code": 200,
-		"msg":  "验证码发送成功",
-	})
+	if err != nil {
+		log.Println("首次生成", err)
+		code := utils.RandomCode()
+		err = models.InsertCodeAndEmailAndExpires(code, request.Email, expires+300000, expires)
+		if err != nil {
+			log.Printf("[插入新数据失败]:%v\n", err)
+			c.JSON(http.StatusOK, gin.H{
+				"code": -1,
+				"msg":  "验证码发送失败",
+			})
+			return
+		}
+		err = utils.SendCode(request.Email, code)
+		if err != nil {
+			log.Printf("[发送验证码失败]:%v\n", err)
+			c.JSON(http.StatusOK, gin.H{
+				"code": -1,
+				"msg":  "验证码发送失败",
+			})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"code": 200,
+			"msg":  "验证码发送成功",
+		})
+		return
+	}
+	if expires >= ev.Expires {
+		// 时间过期重新生成
+		log.Println("时间过期重新生成")
+		code := utils.RandomCode()
+		err = models.UpdateCodeAndExpiresByEmail(code, expires, ev.Email)
+		if err != nil {
+			log.Printf("[ERROR]:%v\n", err)
+			c.JSON(http.StatusOK, gin.H{
+				"code": -1,
+				"msg":  "验证码发送失败",
+			})
+			return
+		}
+		err = utils.SendCode(request.Email, code)
+		if err != nil {
+			log.Printf("[ERROR]:%v\n", err)
+			c.JSON(http.StatusOK, gin.H{
+				"code": -1,
+				"msg":  "验证码发送失败",
+			})
+			return
+		}
+	}
+	if expires < ev.Expires {
+		// 没有过期
+		log.Println("时间未过期直接发送")
+		err = utils.SendCode(request.Email, ev.Code)
+		if err != nil {
+			log.Printf("[ERROR]:%v\n", err)
+			c.JSON(http.StatusOK, gin.H{
+				"code": -1,
+				"msg":  "验证码发送失败",
+			})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"code": 200,
+			"msg":  "验证码发送成功",
+		})
+	}
 }
