@@ -15,6 +15,7 @@ import (
 type UserClaims struct {
 	Identity string `json:"identity"`
 	Email    string `json:"email"`
+	Account  string `json:"account"`
 	jwt.StandardClaims
 }
 
@@ -26,11 +27,16 @@ func GetMd5(s string) string {
 
 var myKey = []byte("draw-service")
 
-func GenerateToken(identity, email string) (string, error) {
+func GenerateToken(identity, email string, account string) (string, error) {
+	TokenExpireDuration := time.Hour * 2
 	UserClaims := &UserClaims{
-		Identity:       identity,
-		Email:          email,
-		StandardClaims: jwt.StandardClaims{},
+		Identity: identity,
+		Email:    email,
+		Account:  account,
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: time.Now().Add(TokenExpireDuration).UnixMilli(),
+			Issuer:    "draw-service",
+		},
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, UserClaims)
 	tokenString, err := token.SignedString(myKey)

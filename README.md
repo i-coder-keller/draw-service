@@ -19,7 +19,7 @@ go get github.com/jordan-wright/email
 
 - [x] 登录
 - [x] 发送验证码
-- [ ] 注册
+- [x] 注册
 - [ ] 修改个人资料
 - [ ] 新建项目
 - [ ] 删除项目

@@ -34,7 +34,7 @@ func Login(c *gin.Context) {
 		})
 		return
 	}
-	token, err := utils.GenerateToken(ub.Identity, ub.Email)
+	token, err := utils.GenerateToken(ub.Identity, ub.Email, ub.Account)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"code": -1,
@@ -158,6 +158,93 @@ func SendSMS(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"code": 200,
 			"msg":  "验证码发送成功",
+		})
+	}
+}
+
+// 注册
+func Register(c *gin.Context) {
+	type register struct {
+		Account  string `json:"account"`
+		Nickname string `json:"nickname"`
+		Email    string `json:"email"`
+		Code     string `json:"code"`
+		Password string `json:"password"`
+	}
+	request := new(register)
+	c.ShouldBindJSON(request)
+	if request.Account == "" {
+		c.JSON(http.StatusOK, gin.H{
+			"code": -1,
+			"msg":  "账号不能为空",
+		})
+		return
+	}
+	if request.Nickname == "" {
+		c.JSON(http.StatusOK, gin.H{
+			"code": -1,
+			"msg":  "账号不能为空",
+		})
+		return
+	}
+	if request.Email == "" {
+		c.JSON(http.StatusOK, gin.H{
+			"code": -1,
+			"msg":  "邮箱不能为空",
+		})
+		return
+	}
+	if request.Code == "" {
+		c.JSON(http.StatusOK, gin.H{
+			"code": -1,
+			"msg":  "验证码不能为空",
+		})
+		return
+	}
+	if request.Password == "" {
+		c.JSON(http.StatusOK, gin.H{
+			"code": -1,
+			"msg":  "密码不能为空",
+		})
+		return
+	}
+	avatar := "http://drawcdn.liuyongzhi.cn/default-avatar.png"
+	ev, err := models.GetEmailValidationByEmail(request.Email)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"code": -1,
+			"msg":  "验证码错误",
+		})
+		return
+	}
+	if ev.Code != request.Code {
+		c.JSON(http.StatusOK, gin.H{
+			"code": -1,
+			"msg":  "验证码错误",
+		})
+		return
+	}
+	ub, err := models.GetUserBasicByAccountAndEmail(request.Account, request.Email)
+	if err != nil {
+		// 未注册
+		err = models.InsertUserBasic(request.Account, request.Email, request.Nickname, utils.GetMd5(request.Password), avatar, time.Now().UnixMilli(), time.Now().UnixMilli())
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"code": -1,
+				"msg":  "注册失败",
+			})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"code": 200,
+			"msg":  "注册成功",
+		})
+		return
+	}
+	if ub.Account != "" {
+		c.JSON(http.StatusOK, gin.H{
+			"code": -1,
+			"msg":  "用户已被注册",
 		})
 	}
 }

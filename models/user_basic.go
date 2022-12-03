@@ -27,7 +27,21 @@ func GetUserBasicByAccountAndPassword(account, password string) (*UserBasic, err
 	return ub, err
 }
 
+func GetUserBasicByAccountAndEmail(account, email string) (*UserBasic, error) {
+	ub := new(UserBasic)
+	err := Mongo.Collection(UserBasic{}.CollectionName()).
+		FindOne(context.Background(), bson.D{{"account", account}, {"email", email}}).
+		Decode(ub)
+	return ub, err
+}
+
 func GetUserBasicByEmail(email string) (int64, error) {
 	return Mongo.Collection(UserBasic{}.CollectionName()).
 		CountDocuments(context.Background(), bson.D{{"email", email}})
+}
+
+func InsertUserBasic(account, email, nickname, password, avatar string, createdAt, updatedAt int64) error {
+	doc := bson.D{{"account", account}, {"email", email}, {"nickname", nickname}, {"avatar", avatar}, {"created_at", createdAt}, {"updated_at", updatedAt}, {"password", password}}
+	_, err := Mongo.Collection(UserBasic{}.CollectionName()).InsertOne(context.Background(), doc)
+	return err
 }
