@@ -159,7 +159,12 @@ func SendSMS(c *gin.Context) {
 			"code": 200,
 			"msg":  "验证码发送成功",
 		})
+		return
 	}
+	c.JSON(http.StatusOK, gin.H{
+		"code": 200,
+		"msg":  "验证码发送成功",
+	})
 }
 
 // 注册
