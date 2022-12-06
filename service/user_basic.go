@@ -253,3 +253,13 @@ func Register(c *gin.Context) {
 		})
 	}
 }
+
+func Auth(c *gin.Context) {
+	authData, _ := c.Get("auth")
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 200,
+		"data": authData,
+		"msg":  "",
+	})
+}
