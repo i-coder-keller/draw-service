@@ -16,7 +16,8 @@ func Router() *gin.Engine {
 	// 用户注册
 	r.POST("/register", service.Register)
 
-	AuthGrounp := r.Group("/api", middleware.AuthMiddleware())
-	AuthGrounp.POST("/auth", service.Auth)
+	AuthGroup := r.Group("/api", middleware.AuthMiddleware())
+	AuthGroup.POST("/auth", service.Auth)
+	AuthGroup.POST("/projects", service.Projects)
 	return r
 }
