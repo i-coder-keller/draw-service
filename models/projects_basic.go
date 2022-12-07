@@ -3,6 +3,7 @@ package models
 import (
 	"context"
 	"go.mongodb.org/mongo-driver/bson"
+	"log"
 )
 
 type ProjectBasic struct {
@@ -18,10 +19,12 @@ type ProjectBasic struct {
 func (ProjectBasic) CollectionName() string {
 	return "project_basic"
 }
-func FindAllProjectByOwnerIdentity(ownerIdentity string) (*[]ProjectBasic, error) {
-	filter := bson.D{{"owner_identity", ownerIdentity}}
-	var result *[]ProjectBasic
-	cursor, err := Mongo.Collection(ProjectBasic{}.CollectionName()).Find(context.Background(), filter)
-	err = cursor.All(context.Background(), &result)
+
+func FindAllProjectByOwnerIdentity(ownerIdentity string) ([]*ProjectBasic, error) {
+	log.Println(ownerIdentity)
+	filter := bson.D{{"owner_identity", "项目所有人唯一标识"}}
+	var result []*ProjectBasic
+	cursor, _ := Mongo.Collection(ProjectBasic{}.CollectionName()).Find(context.Background(), filter)
+	err := cursor.All(context.Background(), &result)
 	return result, err
 }
