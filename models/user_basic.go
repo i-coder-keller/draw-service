@@ -3,6 +3,7 @@ package models
 import (
 	"context"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type UserBasic struct {
@@ -42,9 +43,10 @@ func GetUserBasicByEmail(email string) (int64, error) {
 
 // GetUserBasicByIdentity 根据用户Id查询用户信息
 func GetUserBasicByIdentity(identity string) (*UserBasic, error) {
+	objectId, _ := primitive.ObjectIDFromHex(identity)
 	ub := new(UserBasic)
 	err := Mongo.Collection(UserBasic{}.CollectionName()).
-		FindOne(context.Background(), bson.D{{"_id", identity}}).
+		FindOne(context.Background(), bson.D{{"_id", objectId}}).
 		Decode(ub)
 	return ub, err
 }

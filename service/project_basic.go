@@ -4,26 +4,26 @@ import (
 	"draw-service/models"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"log"
 	"net/http"
 )
 
 type ProjectList struct {
-	projectName  string                `json:"projectName"`
-	projectId    string                `json:"projectId"`
-	updateTime   int64                 `json:"updateTime"`
-	participants []*ProjectParticipant `json:"participants"`
-	owner        bool                  `json:"owner"`
+	ProjectName  string                `json:"projectName"`
+	ProjectId    string                `json:"projectId"`
+	ProjectInfo  string                `json:"projectInfo"`
+	UpdateTime   int64                 `json:"updateTime"`
+	Participants []*ProjectParticipant `json:"participants"`
+	Owner        bool                  `json:"owner"`
 }
 type ProjectParticipant struct {
-	identity string `json:"identity"`
-	avatar   string `json:"avatar"`
-	name     string `json:"name"`
+	Identity string `json:"identity"`
+	Avatar   string `json:"avatar"`
+	Name     string `json:"name"`
 }
 
 // Projects 项目列表
 func Projects(c *gin.Context) {
-	var result []*ProjectList
+	result := make([]*ProjectList, 0)
 	userIdentity := c.GetString("userIdentity")
 	// 查询当前用户创建的项目
 	ownerProjects, err := models.FindAllProjectIdentityByOwnerIdentity(userIdentity)
@@ -42,19 +42,20 @@ func Projects(c *gin.Context) {
 			// 根据项目参与人查询查询参与人信息
 			userInfo, _ := models.GetUserBasicByIdentity(projectParticipant.ParticipantIdentity)
 			projectParticipantUserInfos = append(projectParticipantUserInfos, &ProjectParticipant{
-				identity: userInfo.Identity,
-				avatar:   userInfo.Avatar,
-				name:     userInfo.Nickname,
+				Identity: userInfo.Identity,
+				Avatar:   userInfo.Avatar,
+				Name:     userInfo.Nickname,
 			})
 		}
 		// 根据项目Id查询项目信息
 		projectInfo, _ := models.FindAllProjectByIdentity(ownerProject.ProjectIdentity)
 		result = append(result, &ProjectList{
-			projectName:  projectInfo.Name,
-			projectId:    projectInfo.Identity,
-			updateTime:   projectInfo.UpdatedAt,
-			participants: projectParticipantUserInfos,
-			owner:        true,
+			ProjectName:  projectInfo.Name,
+			ProjectId:    projectInfo.Identity,
+			UpdateTime:   projectInfo.UpdatedAt,
+			Participants: projectParticipantUserInfos,
+			ProjectInfo:  projectInfo.Info,
+			Owner:        true,
 		})
 	}
 
@@ -77,17 +78,18 @@ func Projects(c *gin.Context) {
 			// 根据参与人ID查询参与人详细信息
 			userInfo, _ := models.GetUserBasicByIdentity(projectData.ParticipantIdentity)
 			projectParticipantUserInfos = append(projectParticipantUserInfos, &ProjectParticipant{
-				identity: userInfo.Identity,
-				avatar:   userInfo.Avatar,
-				name:     userInfo.Nickname,
+				Identity: userInfo.Identity,
+				Avatar:   userInfo.Avatar,
+				Name:     userInfo.Nickname,
 			})
 		}
 		result = append(result, &ProjectList{
-			projectName:  projectInfo.Name,
-			projectId:    projectInfo.Identity,
-			updateTime:   projectInfo.UpdatedAt,
-			participants: projectParticipantUserInfos,
-			owner:        false,
+			ProjectName:  projectInfo.Name,
+			ProjectId:    projectInfo.Identity,
+			UpdateTime:   projectInfo.UpdatedAt,
+			ProjectInfo:  projectInfo.Info,
+			Participants: projectParticipantUserInfos,
+			Owner:        false,
 		})
 
 	}
@@ -107,7 +109,6 @@ func CreateProject(c *gin.Context) {
 	var request projectInfo
 	c.ShouldBindJSON(&request)
 	userIdentity := c.GetString("userIdentity")
-	log.Println(request)
 	result, err := models.InsertProject(request.Name, request.Info)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
@@ -130,4 +131,55 @@ func CreateProject(c *gin.Context) {
 		"msg":  "创建成功",
 	})
 
+}
+
+// InviteOfProject 邀请人进入项目
+func InviteOfProject(c *gin.Context) {
+	type Project struct {
+		ProjectId string   `json:"projectId"`
+		Users     []string `json:"users"`
+	}
+	userIdentity := c.GetString("userIdentity")
+	var request Project
+	c.ShouldBindJSON(&request)
+	_, err := models.FindAllProjectByIdentity(request.ProjectId)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"code": -1,
+			"msg":  "暂无此项目",
+		})
+		return
+	}
+	_, err = models.ValidationProjectOfOwner(userIdentity, request.ProjectId)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"code": -1,
+			"msg":  "暂无权限",
+		})
+		return
+	}
+	for _, userId := range request.Users {
+		_, err := models.GetUserBasicByIdentity(userId)
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"code": -1,
+				"msg":  "邀请失败，暂无此用户",
+			})
+			return
+		}
+	}
+	for _, userId := range request.Users {
+		err = models.InsertProjectIdentityByParticipantIdentity(userId, request.ProjectId)
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"code": -1,
+				"msg":  "邀请失败",
+			})
+			return
+		}
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"code": 200,
+		"msg":  "邀请成功",
+	})
 }

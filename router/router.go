@@ -20,5 +20,6 @@ func Router() *gin.Engine {
 	AuthGroup.POST("/auth", service.Auth)
 	AuthGroup.POST("/projects", service.Projects)
 	AuthGroup.POST("/createProject", service.CreateProject)
+	AuthGroup.POST("/invite", service.InviteOfProject)
 	return r
 }
