@@ -19,5 +19,6 @@ func Router() *gin.Engine {
 	AuthGroup := r.Group("/api", middleware.AuthMiddleware())
 	AuthGroup.POST("/auth", service.Auth)
 	AuthGroup.POST("/projects", service.Projects)
+	AuthGroup.POST("/createProject", service.CreateProject)
 	return r
 }

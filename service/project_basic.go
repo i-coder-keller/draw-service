@@ -3,6 +3,8 @@ package service
 import (
 	"draw-service/models"
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"log"
 	"net/http"
 )
 
@@ -19,6 +21,7 @@ type ProjectParticipant struct {
 	name     string `json:"name"`
 }
 
+// 项目列表
 func Projects(c *gin.Context) {
 	var result []*ProjectList
 	userIdentity := c.GetString("userIdentity")
@@ -93,4 +96,38 @@ func Projects(c *gin.Context) {
 		"data": result,
 		"msg":  "查询成功",
 	})
+}
+
+// 创建项目
+func CreateProject(c *gin.Context) {
+	type projectInfo struct {
+		Name string `json:"name"`
+		Info string `json:"info"`
+	}
+	var request projectInfo
+	c.ShouldBindJSON(&request)
+	userIdentity := c.GetString("userIdentity")
+	log.Println(request)
+	result, err := models.InsertProject(request.Name, request.Info)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"code": -1,
+			"msg":  "创建失败",
+		})
+		return
+	}
+	strId := result.(primitive.ObjectID).Hex()
+	err = models.InsertProjectIdentityByOwnerIdentity(userIdentity, strId)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"code": -1,
+			"msg":  "创建失败",
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"code": 200,
+		"msg":  "创建成功",
+	})
+
 }
