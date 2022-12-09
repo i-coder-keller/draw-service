@@ -21,7 +21,7 @@ type ProjectParticipant struct {
 	name     string `json:"name"`
 }
 
-// 项目列表
+// Projects 项目列表
 func Projects(c *gin.Context) {
 	var result []*ProjectList
 	userIdentity := c.GetString("userIdentity")
@@ -98,7 +98,7 @@ func Projects(c *gin.Context) {
 	})
 }
 
-// 创建项目
+// CreateProject 创建项目
 func CreateProject(c *gin.Context) {
 	type projectInfo struct {
 		Name string `json:"name"`
